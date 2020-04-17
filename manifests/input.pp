@@ -87,6 +87,24 @@ define filebeat::input (
       }
     }
 
+    'SunOS' : {
+      $validate_cmd = ($filebeat::disable_config_test or $skip_validation) ? {
+        true    => undef,
+        default => "\"${filebeat::filebeat_path}\" -c \"${filebeat::config_file}\" test config",
+      }
+      file { "filebeat-${name}":
+        ensure       => $ensure,
+        path         => "${filebeat::config_dir}/${name}.yml",
+        owner        => 'root',
+        group        => 'root',
+        mode         => $::filebeat::config_file_mode,
+        content      => template("${module_name}/${input_template}"),
+        validate_cmd => $validate_cmd,
+        notify       => Exec['filebeat-restart'],
+        require      => File['filebeat.yml'],
+      }
+    }
+
     'FreeBSD' : {
       $validate_cmd = ($filebeat::disable_config_test or $skip_validation) ? {
         true    => undef,

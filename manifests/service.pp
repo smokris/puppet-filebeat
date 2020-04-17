@@ -4,10 +4,24 @@
 #
 # @summary Manage the filebeat service
 class filebeat::service {
-  service { 'filebeat':
-    ensure   => $filebeat::real_service_ensure,
-    enable   => $filebeat::service_enable,
-    provider => $filebeat::service_provider,
+  case $::kernel {
+    'SunOS': {
+      exec { 'filebeat':
+        command => '/usr/sbin/svcadm enable svc:/pkgsrc/beats:filebeat',
+        unless  => '/opt/local/bin/test "$(/usr/bin/svcs -H -o state svc:/pkgsrc/beats:filebeat)" = "online"',
+      }
+      exec { 'filebeat-restart':
+        command     => '/usr/sbin/svcadm restart svc:/pkgsrc/beats:filebeat',
+        refreshonly => true,
+      }
+    }
+    default: {
+      service { 'filebeat':
+        ensure   => $filebeat::real_service_ensure,
+        enable   => $filebeat::service_enable,
+        provider => $filebeat::service_provider,
+      }
+    }
   }
 
   $major_version                  = $filebeat::major_version
